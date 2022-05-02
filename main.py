@@ -3,19 +3,22 @@ import pygame
 import sys
 import gym
 from environment import SquaresEnv
+from stable_baselines3 import PPO
+import os
+import time
+from stable_baselines3.common.env_util import make_vec_env
 
-ENV_NAME = 'Pendulum-v1'
-
-
-
+models_dir = f"models/{int(time.time())}/"
+logdir = f"logs/{int(time.time())}/"
 # Get the environment and extract the number of actions.
-env = gym.make(ENV_NAME)
-myEnv = SquaresEnv()
-print(myEnv.action_space)
-print(myEnv.observation_space)
+# Parallel environments
+env = make_vec_env(SquaresEnv, n_envs=10)
 
-rand_int2 = np.random.randint(0,10,(3,)) # random numpy array of shape (4,5)
+model = PPO('MlpPolicy', env, verbose=1, tensorboard_log=logdir)
 
-print (rand_int2)
-print (np.array_equal(rand_int2, np.zeros((3,))))
-#def run():
+TIMESTEPS = 1000000
+iters = 10000000
+while iters > 0:
+	iters -= 1
+	model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
+	model.save(f"{models_dir}/{TIMESTEPS*iters}")
