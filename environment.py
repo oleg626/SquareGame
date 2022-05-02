@@ -13,17 +13,17 @@ def get_shape(shape_type):
     if shape_type == 1:  # X
         shape = np.ones((1, 1), dtype=np.uint8)
     elif shape_type == 2:  # XX
-        shape = np.ones((2, 1), dtype=np.uint8)
-    elif shape_type == 3:
         shape = np.ones((1, 2), dtype=np.uint8)
+    elif shape_type == 3:
+        shape = np.ones((2, 1), dtype=np.uint8)
     elif shape_type == 4:  # XXX
-        shape = np.ones((3, 1), dtype=np.uint8)
-    elif shape_type == 5:
         shape = np.ones((1, 3), dtype=np.uint8)
+    elif shape_type == 5:
+        shape = np.ones((3, 1), dtype=np.uint8)
     elif shape_type == 6:  # XXXX
-        shape = np.ones((4, 1), dtype=np.uint8)
-    elif shape_type == 7:
         shape = np.ones((1, 4), dtype=np.uint8)
+    elif shape_type == 7:
+        shape = np.ones((4, 1), dtype=np.uint8)
     elif shape_type == 8:  # square corner
         shape = np.ones((2, 2), dtype=np.uint8)
         shape[0, 0] = 0
@@ -132,6 +132,7 @@ def get_shape(shape_type):
 
 class SquaresEnv(Env):
     def __init__(self):
+        self.total_reward = 0
         self.NUM_OF_SHAPES = 37
         self.NUM_OF_OPTIONS = 3
         self.BOARD_WIDTH = 9
@@ -162,7 +163,7 @@ class SquaresEnv(Env):
                 if np.array_equal(self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH], bingo):
                     self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH] = 0
                     print('yay')
-                    reward += 10
+                    reward += 15
         return reward
 
     def insertion_possible(self, shape, y, x):
@@ -200,14 +201,14 @@ class SquaresEnv(Env):
         # if chosen shape is not yet used
         if self.items[shape_index] != 0:
             shape_type = self.items[shape_index]
-            self.items[shape_index] = 0
             shape = get_shape(shape_type)
             shape_y = shape.shape[0]
             shape_x = shape.shape[1]
 
             if self.insertion_possible(shape, y, x):
+                self.items[shape_index] = 0
                 reward += 3
-                self.board[y : y + shape_y, x : x + shape_x] = shape
+                self.board[y : y + shape_y, x : x + shape_x] = np.add(self.board[y : y + shape_y, x : x + shape_x], shape)
             else:
                 reward -= 3
         else:
@@ -221,14 +222,19 @@ class SquaresEnv(Env):
             self.items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
 
         # check there are options
-        done = not self.there_are_options()
-        if done:
-            print('shit')
+        self.total_reward += reward
+        done = not self.there_are_options() or reward > 10 or self.total_reward < -20
+        # if done:
+        #     print(self.total_reward)
         info = {}
+        #print(self.board)
+        # print(self.items)
         flat_state = np.concatenate([self.board.flatten(), self.items])
         return flat_state, reward, done, info
 
     def reset(self):
+        # print('reset')
+        self.total_reward = 0
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.items = np.zeros(self.NUM_OF_OPTIONS, dtype=np.uint8)
         self.items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
