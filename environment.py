@@ -133,27 +133,23 @@ def get_shape(shape_type):
 class SquaresEnv(Env):
     def __init__(self):
         self.total_reward = 0
-        self.NUM_OF_SHAPES = 37
+        self.NUM_OF_SHAPES = 8 # 3 actually
         self.NUM_OF_OPTIONS = 3
-        self.BOARD_WIDTH = 9
-        self.BOARD_HEIGHT = 9
+        self.BOARD_WIDTH = 6
+        self.BOARD_HEIGHT = 6
         self.BOX_WIDTH = 3
         self.BOX_HEIGHT = 3
 
-        self.action_space = Box(np.array([0, 0, 0]),
-                                np.array([self.NUM_OF_OPTIONS - 1, self.BOARD_HEIGHT - 1, self.BOARD_WIDTH - 1]),
-                                shape=(3, ), dtype=np.uint8)
-        low = np.zeros(self.BOARD_HEIGHT * self.BOARD_WIDTH + self.NUM_OF_OPTIONS)
-        # board part
-        high1 = np.ones((self.BOARD_HEIGHT * self.BOARD_WIDTH, ), dtype=np.uint8)
-        # shapes part
-        high2 = np.full(self.NUM_OF_OPTIONS, self.NUM_OF_SHAPES)
-        high = np.concatenate([high1, high2])
-        self.observation_space = Box(low, high, shape=high.shape, dtype=np.uint8)
+        self.action_space = Box(low=0, high=0, shape=((self.BOARD_HEIGHT + self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
+                                dtype=np.uint8)
+        self.observation_space = Box(low=0, high=1, shape=((self.BOARD_HEIGHT * self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
+                                     dtype=np.uint8)
 
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
-        self.items = np.zeros(self.NUM_OF_OPTIONS, dtype=np.uint8)
-        self.items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
+        self.items = np.zeros(self.NUM_OF_SHAPES, dtype=np.uint8)
+        random_items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
+        for i in random_items:
+            self.items[i] = 1
 
     def check_full(self):
         reward = 0
@@ -163,7 +159,7 @@ class SquaresEnv(Env):
                 if np.array_equal(self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH], bingo):
                     self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH] = 0
                     print('yay')
-                    reward += 15
+                    reward += 5
         return reward
 
     def insertion_possible(self, shape, y, x):
@@ -181,9 +177,9 @@ class SquaresEnv(Env):
 
     def there_are_options(self):
         there_are_options = False
-        for shape_type in self.items:
-            if shape_type != 0:
-                shape = get_shape(shape_type)
+        for shape_type in range(1, self.items):
+            if self.items[shape_type] != 0:
+                shape = get_shape(self.items[shape_type])
                 for y in range(0, self.board.shape[0] - shape.shape[0]):
                     for x in range(0, self.board.shape[1] - shape.shape[1]):
                         if self.insertion_possible(shape, y, x):
@@ -194,10 +190,14 @@ class SquaresEnv(Env):
         reward = 0
         done = False
         #print(action)
-        shape_index = round(action[0])
-        y = round(action[1])
-        x = round(action[2])
-        #print (shape_index, y, x)
+        act_y = action[:self.BOARD_HEIGHT]
+        act_x = action[self.BOARD_HEIGHT: self.BOARD_HEIGHT + self.BOARD_WIDTH + 1]
+        action_shape = action[-self.NUM_OF_SHAPES:]
+        print(act_x, act_y, action_shape)
+        shape_index = action_shape.tolist().index(1)
+        y = act_y.tolist().index(1)
+        x = act_x.tolist().index(1)
+        print (shape_index, y, x)
         # if chosen shape is not yet used
         if self.items[shape_index] != 0:
             shape_type = self.items[shape_index]
@@ -210,9 +210,9 @@ class SquaresEnv(Env):
                 reward += 3
                 self.board[y : y + shape_y, x : x + shape_x] = np.add(self.board[y : y + shape_y, x : x + shape_x], shape)
             else:
-                reward -= 3
+                reward -= 1
         else:
-            reward -= 3
+            reward -= 1
 
         # add reward for bingo
         reward += self.check_full()
@@ -223,13 +223,17 @@ class SquaresEnv(Env):
 
         # check there are options
         self.total_reward += reward
-        done = not self.there_are_options() or reward > 10 or self.total_reward < -20
+        done = not self.there_are_options() or reward > 6 or self.total_reward < -20
         # if done:
         #     print(self.total_reward)
         info = {}
         #print(self.board)
         # print(self.items)
-        flat_state = np.concatenate([self.board.flatten(), self.items])
+        items = np.zeros(self.NUM_OF_SHAPES)
+        for i in self.items:
+            if i != 0:
+                items[i] = 1
+        flat_state = np.concatenate([self.board.flatten(), items])
         return flat_state, reward, done, info
 
     def reset(self):
