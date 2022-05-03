@@ -1,11 +1,8 @@
 import gym
 from gym import Env
 from gym.spaces import Discrete, Box
-import random
 import numpy as np
-import pygame
-import cv2
-import sys
+import time
 
 
 def get_shape(shape_type):
@@ -133,15 +130,17 @@ def get_shape(shape_type):
 class SquaresEnv(Env):
     def __init__(self):
         self.total_reward = 0
+        self.steps_made = 0
         self.NUM_OF_SHAPES = 8 # 3 actually
         self.NUM_OF_OPTIONS = 3
-        self.BOARD_WIDTH = 6
-        self.BOARD_HEIGHT = 6
+        self.BOARD_WIDTH = 9
+        self.BOARD_HEIGHT = 9
         self.BOX_WIDTH = 3
         self.BOX_HEIGHT = 3
 
-        self.action_space = Box(low=0, high=0, shape=((self.BOARD_HEIGHT + self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
-                                dtype=np.uint8)
+        # self.action_space = Box(low=0, high=0, shape=((self.BOARD_HEIGHT + self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
+        #                         dtype=np.uint8)
+        self.action_space = gym.spaces.MultiDiscrete([self.NUM_OF_SHAPES, self.BOARD_HEIGHT, self.BOARD_WIDTH])
         self.observation_space = Box(low=0, high=1, shape=((self.BOARD_HEIGHT * self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
                                      dtype=np.uint8)
 
@@ -159,7 +158,7 @@ class SquaresEnv(Env):
                 if np.array_equal(self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH], bingo):
                     self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH] = 0
                     print('yay')
-                    reward += 5
+                    reward += 10
         return reward
 
     def insertion_possible(self, shape, y, x):
@@ -176,78 +175,80 @@ class SquaresEnv(Env):
         return True
 
     def there_are_options(self):
-        there_are_options = False
-        for shape_type in range(1, self.items):
-            if self.items[shape_type] != 0:
-                shape = get_shape(self.items[shape_type])
+        for shape_type in self.items:
+            if shape_type != 0:
+                shape = get_shape(shape_type)
                 for y in range(0, self.board.shape[0] - shape.shape[0]):
                     for x in range(0, self.board.shape[1] - shape.shape[1]):
                         if self.insertion_possible(shape, y, x):
-                            there_are_options = True
-        return there_are_options
+                            return True
+        return False
 
     def step(self, action):
+        # start = time.perf_counter()
+        self.steps_made += 1
         reward = 0
         done = False
-        #print(action)
-        act_y = action[:self.BOARD_HEIGHT]
-        act_x = action[self.BOARD_HEIGHT: self.BOARD_HEIGHT + self.BOARD_WIDTH + 1]
-        action_shape = action[-self.NUM_OF_SHAPES:]
-        print(act_x, act_y, action_shape)
-        shape_index = action_shape.tolist().index(1)
-        y = act_y.tolist().index(1)
-        x = act_x.tolist().index(1)
-        print (shape_index, y, x)
+        shape_type = action[0]
+        y = action[1]
+        x = action[2]
         # if chosen shape is not yet used
-        if self.items[shape_index] != 0:
-            shape_type = self.items[shape_index]
+        if self.items.__contains__(shape_type) and shape_type != 0:
             shape = get_shape(shape_type)
             shape_y = shape.shape[0]
             shape_x = shape.shape[1]
 
             if self.insertion_possible(shape, y, x):
-                self.items[shape_index] = 0
+                self.items[np.where(self.items == shape_type)[0][0]] = 0
                 reward += 3
                 self.board[y : y + shape_y, x : x + shape_x] = np.add(self.board[y : y + shape_y, x : x + shape_x], shape)
             else:
                 reward -= 1
         else:
             reward -= 1
-
+        # t1 = time.perf_counter()
+        # print(f'add shape ms: {(t1-start)*1000}')
         # add reward for bingo
         reward += self.check_full()
-
+        # t2 = time.perf_counter()
+        # print(f"check full ms: {(t2 - t1)* 1000}")
         # update shapes available
         if np.array_equal(self.items, np.zeros((self.NUM_OF_OPTIONS,))):
             self.items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
 
         # check there are options
         self.total_reward += reward
-        done = not self.there_are_options() or reward > 6 or self.total_reward < -20
+        done = not self.there_are_options() or self.steps_made > 100
         # if done:
-        #     print(self.total_reward)
+        #     print('shit')
         info = {}
-        #print(self.board)
-        # print(self.items)
         items = np.zeros(self.NUM_OF_SHAPES)
         for i in self.items:
             if i != 0:
                 items[i] = 1
         flat_state = np.concatenate([self.board.flatten(), items])
+        # stop = time.perf_counter()
+        # print(f'there are options ms: {(stop-t2)*1000}')
+        # print(f"total time ms: {(stop-start)*1000}")
         return flat_state, reward, done, info
 
     def reset(self):
         # print('reset')
+        self.steps_made = 0
         self.total_reward = 0
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.items = np.zeros(self.NUM_OF_OPTIONS, dtype=np.uint8)
         self.items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
-        flat_state = np.concatenate([self.board.flatten(), self.items])
+        items = np.zeros(self.NUM_OF_SHAPES)
+        for i in self.items:
+            if i != 0:
+                items[i] = 1
+        flat_state = np.concatenate([self.board.flatten(), items])
         return flat_state
 
     def render(self, mode='shit'):
-        # img = np.zeros((500, 500, 3), dtype = 'uint8')
-        # cv2.imshow("game", img)
-        # cv2.waitKey(0)
-
+        print(self.board)
+        print(self.items)
+        print(self.total_reward)
+        print('')
         pass
