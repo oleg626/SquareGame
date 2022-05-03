@@ -138,11 +138,11 @@ class SquaresEnv(Env):
         self.BOX_WIDTH = 3
         self.BOX_HEIGHT = 3
 
-        # self.action_space = Box(low=0, high=0, shape=((self.BOARD_HEIGHT + self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
-        #                         dtype=np.uint8)
         self.action_space = gym.spaces.MultiDiscrete([self.NUM_OF_SHAPES, self.BOARD_HEIGHT, self.BOARD_WIDTH])
-        self.observation_space = Box(low=0, high=1, shape=((self.BOARD_HEIGHT * self.BOARD_WIDTH + self.NUM_OF_SHAPES),),
-                                     dtype=np.uint8)
+        self.observation_space = gym.spaces.Dict({
+            'board': Box(low=0, high=1, shape=(self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8),
+            'shape': gym.spaces.MultiDiscrete([self.NUM_OF_SHAPES, self.NUM_OF_SHAPES, self.NUM_OF_SHAPES])
+        })
 
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.items = np.zeros(self.NUM_OF_SHAPES, dtype=np.uint8)
@@ -158,7 +158,7 @@ class SquaresEnv(Env):
                 if np.array_equal(self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH], bingo):
                     self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH] = 0
                     print('yay')
-                    reward += 10
+                    reward += 5
         return reward
 
     def insertion_possible(self, shape, y, x):
@@ -200,12 +200,14 @@ class SquaresEnv(Env):
 
             if self.insertion_possible(shape, y, x):
                 self.items[np.where(self.items == shape_type)[0][0]] = 0
-                reward += 3
+                reward += 1
                 self.board[y : y + shape_y, x : x + shape_x] = np.add(self.board[y : y + shape_y, x : x + shape_x], shape)
             else:
                 reward -= 1
+                pass
         else:
             reward -= 1
+            pass
         # t1 = time.perf_counter()
         # print(f'add shape ms: {(t1-start)*1000}')
         # add reward for bingo
@@ -218,19 +220,15 @@ class SquaresEnv(Env):
 
         # check there are options
         self.total_reward += reward
-        done = not self.there_are_options() or self.steps_made > 100
+        done = not self.there_are_options() or self.steps_made > 300
         # if done:
         #     print('shit')
         info = {}
-        items = np.zeros(self.NUM_OF_SHAPES)
-        for i in self.items:
-            if i != 0:
-                items[i] = 1
-        flat_state = np.concatenate([self.board.flatten(), items])
+        dit_state = {'board': self.board, 'shape': self.items}
         # stop = time.perf_counter()
         # print(f'there are options ms: {(stop-t2)*1000}')
         # print(f"total time ms: {(stop-start)*1000}")
-        return flat_state, reward, done, info
+        return dit_state, reward, done, info
 
     def reset(self):
         # print('reset')
@@ -239,12 +237,8 @@ class SquaresEnv(Env):
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.items = np.zeros(self.NUM_OF_OPTIONS, dtype=np.uint8)
         self.items = np.random.randint(1, self.NUM_OF_SHAPES, (self.NUM_OF_OPTIONS,))
-        items = np.zeros(self.NUM_OF_SHAPES)
-        for i in self.items:
-            if i != 0:
-                items[i] = 1
-        flat_state = np.concatenate([self.board.flatten(), items])
-        return flat_state
+        dit_state = {'board': self.board, 'shape': self.items}
+        return dit_state
 
     def render(self, mode='shit'):
         print(self.board)

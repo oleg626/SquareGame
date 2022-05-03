@@ -37,13 +37,17 @@ logdir = f"logs/{int(time.time())}/"
 env = make_vec_env(SquaresEnv, n_envs=6)
 #env = make_vec_env('CartPole-v1', n_envs=6)
 
-model = PPO('MlpPolicy', env, learning_rate=0.003, batch_size=64, n_epochs=10,
+from stable_baselines3.common.envs import SimpleMultiObsEnv
+
+
+
+model = PPO('MultiInputPolicy', env, learning_rate=0.003, batch_size=64, n_epochs=10,
             gamma=0.99, gae_lambda=0.95, clip_range=0.2, clip_range_vf=None, normalize_advantage=True,
             ent_coef=0.05, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
             target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
             verbose=1, seed=None, device='cuda', _init_setup_model=True)
 
-TIMESTEPS = 1000000
+TIMESTEPS = 2000000
 
 model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
 model.save(f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}")
