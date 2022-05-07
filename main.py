@@ -13,29 +13,8 @@ from stable_baselines3.common.env_util import make_vec_env
 
 models_dir = f"models/{int(time.time())}/"
 logdir = f"logs/{int(time.time())}/"
-# Get the environment and extract the number of actions.
 # Parallel environments
-#env = SquaresEnv()
-
-# done = False
-# total_reward = 0
-# list_of_rewards = []
-# for i in range(0, 50):
-# 	total_reward = 0
-# 	done = False
-# 	env.reset()
-# 	while not done:
-# 		# idx = int(input("Enter shape: "))
-# 		# y = int(input("Shift Y: "))
-# 		# x = int(input("Shift X: "))
-# 		actions = env.action_space.sample()
-# 		state, reward, done, info = env.step(actions)
-# 		total_reward += reward
-# 	list_of_rewards.append(total_reward)
-# print(list_of_rewards)
-#env = SquaresEnv()
 env = make_vec_env(SquaresEnv, n_envs=6)
-#env = make_vec_env('CartPole-v1', n_envs=6)
 
 from stable_baselines3.common.envs import SimpleMultiObsEnv
 
@@ -47,23 +26,23 @@ model = PPO('MultiInputPolicy', env, learning_rate=0.003, batch_size=64, n_epoch
             target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
             verbose=1, seed=None, device='cuda', _init_setup_model=True)
 
-TIMESTEPS = 2000000
+TIMESTEPS = 1000000
 
 model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
 model.save(f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}")
 
-# done = False
-# total_reward = 0
-# list_of_rewards = []
-# #env = gym.make("CartPole-v1")
-# for i in range(0, 5):
-#     total_reward = 0
-#     done = False
-#     state = env.reset()
-#     while not done:
-#         actions = model.predict(state)
-#         print(actions[0])
-#         state, reward, done, info = env.step(actions[0])
-#         env.render()
-#         total_reward += reward
-#     print(total_reward)
+env = SquaresEnv()
+done = False
+total_reward = 0
+list_of_rewards = []
+for i in range(0, 5):
+    total_reward = 0
+    done = False
+    state = env.reset()
+    while not done:
+        actions = model.predict(state)
+        print(actions[0])
+        state, reward, done, info = env.step(actions[0])
+        env.render()
+        total_reward += reward
+    print(total_reward)
