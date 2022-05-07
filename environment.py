@@ -138,31 +138,28 @@ class SquaresEnv(Env):
     def __init__(self):
         self.total_reward = 0
         self.steps_made = 0
-        self.NUM_OF_SHAPES = 8 # 3 actually
-        self.NUM_OF_OPTIONS = 3
+        self.NUM_OF_SHAPES = 3 # 3 actually
         self.BOARD_WIDTH = 9
         self.BOARD_HEIGHT = 9
         self.BOX_WIDTH = 3
         self.BOX_HEIGHT = 3
 
-        self.action_space = gym.spaces.MultiDiscrete([self.BOARD_HEIGHT, self.BOARD_WIDTH])
-        self.observation_space = gym.spaces.Dict({
-            'board': Box(low=0, high=1, shape=(self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8),
-            'shape': Box(low=0, high=1, shape=(4, 4), dtype=np.uint8),
-        })
-
+        self.action_space = gym.spaces.MultiDiscrete(([self.BOARD_HEIGHT, self.BOARD_WIDTH]))
+        self.observation_space = Box(low=0, high=255,
+                                     shape=(self.BOARD_HEIGHT*2 + 4, self.BOARD_WIDTH, 1), dtype=np.uint8)
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
-        self.shape = get_shape(np.random.randint(1, 6))
+        self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
+        self.shape = get_shape(np.random.randint(1, self.NUM_OF_SHAPES))
 
     def check_full(self):
         reward = 0
-        bingo = np.ones((self.BOX_HEIGHT, self.BOX_WIDTH), dtype=np.uint8)
+        bingo = np.ones((self.BOX_HEIGHT, self.BOX_WIDTH), dtype="float32")
         for row in range(0, self.BOARD_HEIGHT - 1, self.BOX_HEIGHT):
             for col in range(0, self.BOARD_WIDTH - 1, self.BOX_WIDTH):
                 if np.array_equal(self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH], bingo):
                     self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH] = 0
                     print('yay')
-                    reward += 5
+                    reward += 1
         return reward
 
     def insertion_possible(self, shape, y, x):
@@ -179,14 +176,15 @@ class SquaresEnv(Env):
         return True
 
     def there_are_options(self):
+        options = np.zeros(shape=(self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype="float32")
         shape = self.shape
         p = np.where(shape != 0)
         shape = shape[min(p[0]): max(p[0]) + 1, min(p[1]): max(p[1]) + 1]
         for y in range(0, self.board.shape[0] - shape.shape[0]):
             for x in range(0, self.board.shape[1] - shape.shape[1]):
                 if self.insertion_possible(shape, y, x):
-                    return True
-        return False
+                    options[y, x] = 1
+        return options
 
     def step(self, action):
         self.steps_made += 1
@@ -195,35 +193,48 @@ class SquaresEnv(Env):
         y = action[0]
         x = action[1]
         shape = self.shape
+        p = np.where(shape != 0)
+        shape = shape[min(p[0]): max(p[0]) + 1, min(p[1]): max(p[1]) + 1]
         shape_y = shape.shape[0]
         shape_x = shape.shape[1]
 
         if self.insertion_possible(shape, y, x):
-            reward += 1
+            reward += 0.1
             self.board[y : y + shape_y, x : x + shape_x] = np.add(self.board[y : y + shape_y, x : x + shape_x], shape)
         else:
             reward -= 1
+            done = True
             pass
         # add reward for bingo
         reward += self.check_full()
         # update shapes available
-        self.shape = get_shape(np.random.randint(1, 6))
+        self.shape = get_shape(np.random.randint(1, self.NUM_OF_SHAPES))
 
         # check there are options
         self.total_reward += reward
-        done = not self.there_are_options() or self.steps_made > 300
+        self.options = self.there_are_options()
+        done = done or np.array_equal(self.options, np.zeros(shape=(self.BOARD_HEIGHT, self.BOARD_WIDTH)))
+        done = done or self.steps_made >= 100
 
         info = {}
-        dit_state = {'board': self.board, 'shape': self.shape}
-        return dit_state, reward, done, info
+        state = np.zeros(shape=(self.BOARD_HEIGHT*2 + 4, self.BOARD_WIDTH, 1), dtype=np.uint8)
+        state[:self.BOARD_HEIGHT, :, 0] = self.board
+        state[self.BOARD_HEIGHT: 2*self.BOARD_HEIGHT, :, 0] = self.options
+        state[self.BOARD_HEIGHT*2:, : self.shape.shape[1], 0] = self.shape
+        state *= 255
+        return state, reward, done, info
 
     def reset(self):
         self.steps_made = 0
         self.total_reward = 0
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
-        self.shape = get_shape(np.random.randint(1, 6))
-        dit_state = {'board': self.board, 'shape': self.shape}
-        return dit_state
+        self.shape = get_shape(np.random.randint(1, self.NUM_OF_SHAPES))
+        state = np.zeros(shape=(self.BOARD_HEIGHT*2 + 4, self.BOARD_WIDTH, 1), dtype=np.uint8)
+        state[:self.BOARD_HEIGHT, :, 0] = self.board
+        state[self.BOARD_HEIGHT: 2*self.BOARD_HEIGHT, :, 0] = self.options
+        state[self.BOARD_HEIGHT*2:, : self.shape.shape[1], 0] = self.shape
+        state *= 255
+        return state
 
     def render(self, mode='shit'):
         print(self.board)
