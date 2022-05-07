@@ -138,7 +138,7 @@ class SquaresEnv(Env):
     def __init__(self):
         self.total_reward = 0
         self.steps_made = 0
-        self.NUM_OF_SHAPES = 3 # 3 actually
+        self.NUM_OF_SHAPES = 37 # 3 actually
         self.BOARD_WIDTH = 9
         self.BOARD_HEIGHT = 9
         self.BOX_WIDTH = 3
@@ -158,11 +158,11 @@ class SquaresEnv(Env):
             for col in range(0, self.BOARD_WIDTH - 1, self.BOX_WIDTH):
                 if np.array_equal(self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH], bingo):
                     self.board[row:row + self.BOX_HEIGHT, col:col+self.BOX_WIDTH] = 0
-                    print('yay')
+                    #print('yay')
                     reward += 1
         return reward
 
-    def insertion_possible(self, shape, y, x):
+    def insertion_possible(self, shape, y, x, log = False):
         shape_y = shape.shape[0]
         shape_x = shape.shape[1]
         if (y + shape_y) <= self.board.shape[0] and (x + shape_x) <= self.board.shape[1]:
@@ -170,19 +170,30 @@ class SquaresEnv(Env):
             for local_x in range(0, shape_x):
                 for local_y in range(0, shape_y):
                     if self.board[y + local_y, x + local_x] == 1 and shape[local_y, local_x] == 1:
+                        if log:
+                            print(f'board {y + local_y} , {x+ local_x} , shape {local_y}, {local_x}')
                         return False
         else:
+            if log:
+                print("size issue")
             return False
         return True
 
-    def there_are_options(self):
+    def there_are_options(self, log = False):
         options = np.zeros(shape=(self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype="float32")
         shape = self.shape
         p = np.where(shape != 0)
         shape = shape[min(p[0]): max(p[0]) + 1, min(p[1]): max(p[1]) + 1]
-        for y in range(0, self.board.shape[0] - shape.shape[0]):
-            for x in range(0, self.board.shape[1] - shape.shape[1]):
-                if self.insertion_possible(shape, y, x):
+        if log:
+            print("there are options, shape")
+            print(shape)
+        for y in range(0, self.board.shape[0] - shape.shape[0] + 1):
+            for x in range(0, self.board.shape[1] - shape.shape[1] + 1):
+                if log:
+                    print(f'check at pos ({y},{x})')
+                if self.insertion_possible(shape, y, x, log):
+                    if log:
+                        print('passed')
                     options[y, x] = 1
         return options
 
@@ -199,11 +210,11 @@ class SquaresEnv(Env):
         shape_x = shape.shape[1]
 
         if self.insertion_possible(shape, y, x):
-            reward += 0.1
+            reward += 0.2
             self.board[y : y + shape_y, x : x + shape_x] = np.add(self.board[y : y + shape_y, x : x + shape_x], shape)
         else:
             reward -= 1
-            done = True
+            #done = True
             pass
         # add reward for bingo
         reward += self.check_full()

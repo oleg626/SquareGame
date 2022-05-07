@@ -25,36 +25,25 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 
 myEnv = SquaresEnv()
 check_env(myEnv)
-models_dir = f"models/{int(time.time())}/"
-logdir = f"logs/{int(time.time())}/"
-# Parallel environments
-env = make_vec_env(SquaresEnv, n_envs=6)
-from stable_baselines3.common.envs import SimpleMultiObsEnv
 
+for lr in [0.005, 0.01, 0.02]:
+    for batch in [32, 64, 128]:
+        for clip in [0.2, 0.3, 0.4]:
+            for ent in [0.01, 0.05, 0.1]:
+                envType = 'board_options_shape_'
+                run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}'
+                models_dir = f"models/{run}/"
+                logdir = f"logs/{run}/"
+                # Parallel environments
+                env = make_vec_env(SquaresEnv, n_envs=8)
 
+                model = PPO('MlpPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
+                            gamma=0.99, gae_lambda=0.95, clip_range=clip, clip_range_vf=None, normalize_advantage=True,
+                            ent_coef=ent, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
+                            target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
+                            verbose=1, seed=None, device='auto', _init_setup_model=True)
 
-model = PPO('MlpPolicy', env, learning_rate=0.01, batch_size=512, n_epochs=10,
-            gamma=0.98, gae_lambda=0.95, clip_range=0.2, clip_range_vf=None, normalize_advantage=True,
-            ent_coef=0.05, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
-            target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
-            verbose=1, seed=None, device='cuda', _init_setup_model=True)
+                TIMESTEPS = 500000
 
-TIMESTEPS = 5000000
-
-model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
-model.save(f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}")
-
-done = False
-total_reward = 0
-list_of_rewards = []
-for i in range(0, 5):
-    total_reward = 0
-    done = False
-    state = myEnv.reset()
-    while not done:
-        myEnv.render()
-        actions = model.predict(state)
-        print(actions[0])
-        state, reward, done, info = myEnv.step(actions[0])
-        total_reward += reward
-    print(total_reward)
+                model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
+                model.save(f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}")
