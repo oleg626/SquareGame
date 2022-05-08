@@ -26,12 +26,45 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 myEnv = SquaresEnv()
 check_env(myEnv)
 
+step_times = []
+done = False
+for i in range(1000):
+    myEnv.reset()
+    while not done:
+        action = myEnv.action_space.sample()
+        t1 = time.perf_counter()
+        state, reward, done, info = myEnv.step(action)
+        step_times.append(time.perf_counter() - t1)
+print(f'step takes average ns: {sum(step_times) / len(step_times) * 1000000}')
+
+step_times = []
+done = False
+for i in range(1000):
+    myEnv.reset()
+    while not done:
+        action = myEnv.action_space.sample()
+        t1 = time.perf_counter()
+        state, reward, done, info = myEnv.step(action)
+        step_times.append(time.perf_counter() - t1)
+print(f'step takes average ns: {sum(step_times) / len(step_times) * 1000000}')
+
+step_times = []
+done = False
+for i in range(1000):
+    myEnv.reset()
+    while not done:
+        action = myEnv.action_space.sample()
+        t1 = time.perf_counter()
+        state, reward, done, info = myEnv.step(action)
+        step_times.append(time.perf_counter() - t1)
+print(f'step takes average ns: {sum(step_times) / len(step_times) * 1000000}')
+
 for lr in [0.005]:
     for batch in [128]:
         for clip in [0.4]:
             for ent in [0.05]:
-                envType = 'no_limit_closest_linear_obs_action_MD_'
-                run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}'
+                envType = 'fixed_closest_linear_obs_action_MD_'
+                run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}_{np.random.randint(0, 1000)}'
                 models_dir = f"models/{run}/"
                 logdir = f"logs/{run}/"
                 # Parallel environments

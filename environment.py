@@ -129,6 +129,19 @@ def get_shape(shape_type):
     return res
 
 
+def closest_pair(input_list, pair):
+    maxVal = 20
+    closest = []
+    y_list = input_list[0]
+    x_list = input_list[1]
+    for i in range(0, len(y_list)):
+        val = abs(y_list[i] - pair[0]) + abs(x_list[i] - pair[1])
+        if val < maxVal:
+            closest = [y_list[i], x_list[i]]
+            maxVal = val
+    return closest
+
+
 class SquaresEnv(Env):
     def __init__(self):
         self.total_reward = 0
@@ -173,6 +186,7 @@ class SquaresEnv(Env):
         return True
 
     def there_are_options(self):
+        self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         shape = get_shape(self.current_shape)
         p = np.where(shape != 0)
         shape = shape[min(p[0]): max(p[0]) + 1, min(p[1]): max(p[1]) + 1]
@@ -185,36 +199,37 @@ class SquaresEnv(Env):
         return yes
 
     def step(self, action):
-        # start = time.perf_counter()
+        done = not self.there_are_options()
+        if done:
+            shape = get_shape(self.current_shape)
+            dit_state = np.concatenate([self.board.flatten(), self.options.flatten(), shape.flatten()])
+            return dit_state, 0, done, {}
         self.steps_made += 1
         reward = 0
-        done = False
         y = action[0]
         x = action[1]
-        # if chosen shape is not yet used
         shape = get_shape(self.current_shape)
         p = np.where(shape != 0)
         shape = shape[min(p[0]): max(p[0]) + 1, min(p[1]): max(p[1]) + 1]
+
         shape_y = shape.shape[0]
         shape_x = shape.shape[1]
-        if self.insertion_possible(shape, y, x):
+        if self.options[y, x] == 1:
             reward += 0.1
             self.board[y: y + shape_y, x: x + shape_x] = np.add(self.board[y: y + shape_y, x: x + shape_x], shape)
         else:
             options = np.where(self.options != 0)
-            y = min(options[0], key=lambda val: abs(val - y))
-            x = min(options[1], key=lambda val: abs(val - x))
+            res = closest_pair(options, [y, x])
+            y = res[0]
+            x = res[1]
             self.board[y: y + shape_y, x: x + shape_x] = np.add(self.board[y: y + shape_y, x: x + shape_x], shape)
-            reward -= 0.1
-            #done = True
+            reward -= 0.3
 
-        self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         # add reward for bingo
         reward += self.check_full()
         # check there are options
         self.total_reward += reward
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
-        done = done or not self.there_are_options() or self.steps_made > 100
         info = {}
         shape = get_shape(self.current_shape)
         dit_state = np.concatenate([self.board.flatten(), self.options.flatten(), shape.flatten()])
@@ -224,7 +239,6 @@ class SquaresEnv(Env):
         self.steps_made = 0
         self.total_reward = 0
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
-        self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         self.there_are_options()
         shape = get_shape(self.current_shape)
