@@ -30,14 +30,14 @@ for lr in [0.005]:
     for batch in [128]:
         for clip in [0.4]:
             for ent in [0.05]:
-                envType = 't_obs_board_numShape37_action_MD_'
+                envType = 'no_limit_closest_linear_obs_action_MD_'
                 run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}'
                 models_dir = f"models/{run}/"
                 logdir = f"logs/{run}/"
                 # Parallel environments
                 env = make_vec_env(SquaresEnv, n_envs=8)
 
-                model = PPO('MultiInputPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
+                model = PPO('MlpPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
                             gamma=0.99, gae_lambda=0.95, clip_range=clip, clip_range_vf=None, normalize_advantage=True,
                             ent_coef=ent, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
                             target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
