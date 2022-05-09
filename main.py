@@ -59,24 +59,42 @@ for i in range(1000):
         step_times.append(time.perf_counter() - t1)
 print(f'step takes average ns: {sum(step_times) / len(step_times) * 1000000}')
 
-for lr in [0.005]:
+# model = PPO.load('models/linear_obs_action_MD_lr_0.003_batch_128_clip_0.4_ent_0.01_484/446500000')
+# average_rewards = []
+# temp = 0
+# done = False
+# for num in range(4, 11):
+#     myEnv.set_num_of_shapes(num)
+#     for i in range(5):
+#         state = myEnv.reset()
+#         done = False
+#         temp = 0
+#         while not done:
+#             action = model.predict(state)
+#             state, reward, done, info = myEnv.step(action[0])
+#             temp += reward
+#         average_rewards.append(temp)
+#     print(f'average reward: {sum(average_rewards) / len(average_rewards)}')
+
+for lr in [0.003]:
     for batch in [128]:
         for clip in [0.4]:
-            for ent in [0.05]:
-                envType = 'fixed_closest_linear_obs_action_MD_'
+            for ent in [0.01]:
+                envType = 'linear_obs_action_MD_'
                 run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}_{np.random.randint(0, 1000)}'
                 models_dir = f"models/{run}/"
                 logdir = f"logs/{run}/"
                 # Parallel environments
-                env = make_vec_env(SquaresEnv, n_envs=8)
+                env = make_vec_env(SquaresEnv, n_envs=6)
 
                 model = PPO('MlpPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
                             gamma=0.99, gae_lambda=0.95, clip_range=clip, clip_range_vf=None, normalize_advantage=True,
                             ent_coef=ent, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
                             target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
                             verbose=1, seed=None, device='auto', _init_setup_model=True)
-
-                TIMESTEPS = 5000000
-
+                TIMESTEPS = 10000000
                 model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
-                model.save(f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}")
+                model_name = f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}"
+                model.save(model_name)
+
+
