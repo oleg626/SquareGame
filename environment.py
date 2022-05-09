@@ -253,7 +253,7 @@ class SquaresEnv(Env):
 
     def render(self, mode='shit'):
         print(self.board)
-        print(self.current_shape)
+        print(get_shape(self.current_shape))
         print(self.total_reward)
         print('')
         pass
