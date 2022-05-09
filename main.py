@@ -5,6 +5,7 @@ import pygame
 import sys
 import gym
 from environment import SquaresEnv
+from SquareGameRender import SquareGameRenderer
 from pretrain import ExpertDataSet, pretrain_agent
 from torch.utils.data.dataset import random_split
 from stable_baselines3 import PPO
@@ -62,8 +63,11 @@ def check_runtime(myEnv):
 
 
 myEnv = SquaresEnv()
+state = myEnv.reset()
+game = SquareGameRenderer(myEnv, myEnv.get_obs(), myEnv.get_shape())
+game.start()
 check_env(myEnv)
-check_runtime(myEnv)
+#check_runtime(myEnv)
 
 # PRETRAIN SECTION
 expert_observations = []
@@ -73,17 +77,17 @@ for i in range(0, 3):
     done = False
     temp = 0
     while not done:
-        myEnv.render()
-        y = int(input("Enter Y:"))
-        x = int(input("Enter X:"))
-        action = [y, x]
-        # action = myEnv.action_space.sample()
+        myEnv.render('human')
+        # y = int(input("Enter Y:"))
+        # x = int(input("Enter X:"))
+        # action = [y, x]
+        action = myEnv.action_space.sample()
         expert_observations.append(state)
         expert_actions.append(action)
         state, reward, done, info = myEnv.step(action)
-for i in range(0, len(expert_actions)):
-    print(expert_observations[i])
-    print(expert_actions[i])
+# for i in range(0, len(expert_actions)):
+#     print(expert_observations[i])
+#     print(expert_actions[i])
 
 np.savez_compressed(
     f"expert_data_{np.random.randint(1,10000)}",
@@ -120,28 +124,28 @@ train_expert_dataset, test_expert_dataset = random_split(
 #         average_rewards.append(temp)
 #     print(f'average reward: {sum(average_rewards) / len(average_rewards)}')
 
-for lr in [0.003]:
-    for batch in [128]:
-        for clip in [0.4]:
-            for ent in [0.01]:
-                envType = 'linear_obs_action_MD_'
-                run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}_{np.random.randint(0, 1000)}'
-                models_dir = f"models/{run}/"
-                logdir = f"logs/{run}/"
-                # Parallel environments
-                #env = make_vec_env(SquaresEnv, n_envs=6)
-                env = SquaresEnv()
-
-                model = PPO('MlpPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
-                            gamma=0.99, gae_lambda=0.95, clip_range=clip, clip_range_vf=None, normalize_advantage=True,
-                            ent_coef=ent, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
-                            target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
-                            verbose=1, seed=None, device='auto', _init_setup_model=True)
-
-                pretrain_agent(model, env, train_expert_dataset, test_expert_dataset)
-                TIMESTEPS = 10000000
-                model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
-                model_name = f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}"
-                model.save(model_name)
+# for lr in [0.003]:
+#     for batch in [128]:
+#         for clip in [0.4]:
+#             for ent in [0.01]:
+#                 envType = 'linear_obs_action_MD_'
+#                 run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}_{np.random.randint(0, 1000)}'
+#                 models_dir = f"models/{run}/"
+#                 logdir = f"logs/{run}/"
+#                 # Parallel environments
+#                 #env = make_vec_env(SquaresEnv, n_envs=6)
+#                 env = SquaresEnv()
+#
+#                 model = PPO('MlpPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
+#                             gamma=0.99, gae_lambda=0.95, clip_range=clip, clip_range_vf=None, normalize_advantage=True,
+#                             ent_coef=ent, vf_coef=0.5, max_grad_norm=0.5, use_sde=False, sde_sample_freq=- 1,
+#                             target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
+#                             verbose=1, seed=None, device='auto', _init_setup_model=True)
+#
+#                 pretrain_agent(model, env, train_expert_dataset, test_expert_dataset)
+#                 TIMESTEPS = 10000000
+#                 model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
+#                 model_name = f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}"
+#                 model.save(model_name)
 
 
