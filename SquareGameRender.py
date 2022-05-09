@@ -12,6 +12,8 @@ class SquareGameRenderer:
         self.board_height = state_shape[0]
         self.shape_width = figure_shape[1]
         self.shape_height = figure_shape[0]
+        self.general_margin_x = 60
+        self.general_margin_y = 60
         self.icon_width = 100
         self.icon_height = 100
         self.window_width = (self.board_width + self.shape_width) * self.icon_width + 200
@@ -26,7 +28,15 @@ class SquareGameRenderer:
 
     def step(self, x, y):
         print(x, y)
-        action = self.env.action_space.sample()
+        x += (self.half_window_width - self.general_margin_x)
+        x = np.clip(x, 0, self.board_width * self.icon_width)
+        x = round(x / self.icon_width)
+        y += (self.half_window_height + self.general_margin_y)
+        y = abs(self.window_height - y)
+        y = np.clip(y, 0, self.board_height * self.icon_height)
+        y = round(y / self.icon_height)
+        print(y, x)
+        action = [y, x]
         state, reward, done, info = self.env.step(action)
         total_reward = info['total_reward']
         if done:
@@ -45,8 +55,7 @@ class SquareGameRenderer:
         self.window.bgcolor("black")
         self.window.delay(0)
         self.window.onscreenclick(self.step)
-        general_margin_x = 60
-        general_margin_y = 60
+
         idx = self.board_height * self.board_width
         board = np.array(state[:idx])
         board = board.reshape((self.board_width, self.board_height))
@@ -67,10 +76,10 @@ class SquareGameRenderer:
                     cookie.shape("cupcake.gif")
                 else:
                     cookie.shape("cookie.gif")
-                x_pos = general_margin_x + col * self.icon_width - self.half_window_width
-                y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - general_margin_y
+                x_pos = self.general_margin_x + col * self.icon_width - self.half_window_width
+                y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - self.general_margin_y
                 cookie.setposition(x_pos, y_pos)
-        shape_margin_x = (general_margin_x * 2) + board.shape[1] * self.icon_width
+        shape_margin_x = (self.general_margin_x * 2) + board.shape[1] * self.icon_width
         for row in range(self.shape_height):
             for col in range(self.shape_width):
                 cookie = turtle.Turtle()
