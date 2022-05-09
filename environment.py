@@ -144,9 +144,11 @@ def closest_pair(input_list, pair):
 
 class SquaresEnv(Env):
     def __init__(self):
+        self.total_episodes = 0
+        self.last_difficulty_increase_episode = 0
         self.total_reward = 0
         self.steps_made = 0
-        self.NUM_OF_SHAPES = 3
+        self.NUM_OF_SHAPES = 37
         self.BOARD_WIDTH = 9
         self.BOARD_HEIGHT = 9
         self.BOX_WIDTH = 3
@@ -159,6 +161,9 @@ class SquaresEnv(Env):
         self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         self.there_are_options()
+
+    def set_num_of_shapes(self, num):
+        self.NUM_OF_SHAPES = num
 
     def check_full(self):
         reward = 0
@@ -216,8 +221,8 @@ class SquaresEnv(Env):
         if self.options[y, x] == 1:
             self.board[y: y + shape_y, x: x + shape_x] = np.add(self.board[y: y + shape_y, x: x + shape_x], shape)
         else:
-            options = np.where(self.options != 0)
-            res = closest_pair(options, [y, x])
+            opt = np.where(self.options != 0)
+            res = closest_pair(opt, [y, x])
             y = res[0]
             x = res[1]
             self.board[y: y + shape_y, x: x + shape_x] = np.add(self.board[y: y + shape_y, x: x + shape_x], shape)
@@ -233,6 +238,10 @@ class SquaresEnv(Env):
         return dit_state, reward, done, info
 
     def reset(self):
+        self.total_episodes += 1
+        if self.total_reward > 200 and (self.total_episodes - self.last_difficulty_increase_episode) > 30:
+            self.set_num_of_shapes(self.NUM_OF_SHAPES + 1)
+            self.last_difficulty_increase_episode = self.total_episodes
         self.steps_made = 0
         self.total_reward = 0
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
