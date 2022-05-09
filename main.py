@@ -5,6 +5,7 @@ import pygame
 import sys
 import gym
 from environment import SquaresEnv
+from SquareGameRender import SquareGameRenderer
 from pretrain import ExpertDataSet, pretrain_agent
 from torch.utils.data.dataset import random_split
 from stable_baselines3 import PPO
@@ -62,6 +63,9 @@ def check_runtime(myEnv):
 
 
 myEnv = SquaresEnv()
+state = myEnv.reset()
+game = SquareGameRenderer(myEnv, myEnv.get_obs(), myEnv.get_shape())
+game.start()
 check_env(myEnv)
 #check_runtime(myEnv)
 
