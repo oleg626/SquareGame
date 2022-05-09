@@ -59,16 +59,16 @@ for i in range(1000):
         step_times.append(time.perf_counter() - t1)
 print(f'step takes average ns: {sum(step_times) / len(step_times) * 1000000}')
 
-for lr in [0.005]:
+for lr in [0.003, 0.005]:
     for batch in [128]:
         for clip in [0.4]:
-            for ent in [0.05]:
-                envType = 'fixed_closest_linear_obs_action_MD_'
+            for ent in [0.01, 0.02, 0.05]:
+                envType = 'linear_obs_action_MD_'
                 run = envType + f'lr_{lr}_batch_{batch}_clip_{clip}_ent_{ent}_{np.random.randint(0, 1000)}'
                 models_dir = f"models/{run}/"
                 logdir = f"logs/{run}/"
                 # Parallel environments
-                env = make_vec_env(SquaresEnv, n_envs=8)
+                env = make_vec_env(SquaresEnv, n_envs=6)
 
                 model = PPO('MlpPolicy', env, learning_rate=lr, batch_size=batch, n_epochs=10,
                             gamma=0.99, gae_lambda=0.95, clip_range=clip, clip_range_vf=None, normalize_advantage=True,
@@ -76,7 +76,7 @@ for lr in [0.005]:
                             target_kl=None, tensorboard_log=logdir, create_eval_env=False, policy_kwargs=None,
                             verbose=1, seed=None, device='auto', _init_setup_model=True)
 
-                TIMESTEPS = 5000000
+                TIMESTEPS = 500000
 
                 model.learn(total_timesteps=TIMESTEPS, reset_num_timesteps=False, tb_log_name=f"PPO")
                 model.save(f"{models_dir}/{TIMESTEPS*random.randint(0,1000)}")

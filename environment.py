@@ -146,20 +146,19 @@ class SquaresEnv(Env):
     def __init__(self):
         self.total_reward = 0
         self.steps_made = 0
-        self.NUM_OF_SHAPES = 37
+        self.NUM_OF_SHAPES = 3
         self.BOARD_WIDTH = 9
         self.BOARD_HEIGHT = 9
         self.BOX_WIDTH = 3
         self.BOX_HEIGHT = 3
 
         self.action_space = gym.spaces.MultiDiscrete([self.BOARD_HEIGHT, self.BOARD_WIDTH])
-        self.observation_space = Box(low=0, high=1, shape=(self.BOARD_HEIGHT * self.BOARD_WIDTH * 2 + 16,), dtype=np.uint8)
+        self.observation_space = Box(low=0, high=1, shape=(self.BOARD_HEIGHT * self.BOARD_WIDTH + 16,), dtype=np.uint8)
 
         self.board = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         self.there_are_options()
-
 
     def check_full(self):
         reward = 0
@@ -202,8 +201,8 @@ class SquaresEnv(Env):
         done = not self.there_are_options()
         if done:
             shape = get_shape(self.current_shape)
-            dit_state = np.concatenate([self.board.flatten(), self.options.flatten(), shape.flatten()])
-            return dit_state, 0, done, {}
+            dit_state = np.concatenate([self.board.flatten(), shape.flatten()])
+            return dit_state, -1, done, {}
         self.steps_made += 1
         reward = 0
         y = action[0]
@@ -215,7 +214,6 @@ class SquaresEnv(Env):
         shape_y = shape.shape[0]
         shape_x = shape.shape[1]
         if self.options[y, x] == 1:
-            reward += 0.1
             self.board[y: y + shape_y, x: x + shape_x] = np.add(self.board[y: y + shape_y, x: x + shape_x], shape)
         else:
             options = np.where(self.options != 0)
@@ -223,8 +221,7 @@ class SquaresEnv(Env):
             y = res[0]
             x = res[1]
             self.board[y: y + shape_y, x: x + shape_x] = np.add(self.board[y: y + shape_y, x: x + shape_x], shape)
-            reward -= 0.3
-
+        reward -= 0.1
         # add reward for bingo
         reward += self.check_full()
         # check there are options
@@ -232,7 +229,7 @@ class SquaresEnv(Env):
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         info = {}
         shape = get_shape(self.current_shape)
-        dit_state = np.concatenate([self.board.flatten(), self.options.flatten(), shape.flatten()])
+        dit_state = np.concatenate([self.board.flatten(), shape.flatten()])
         return dit_state, reward, done, info
 
     def reset(self):
@@ -242,7 +239,7 @@ class SquaresEnv(Env):
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         self.there_are_options()
         shape = get_shape(self.current_shape)
-        dit_state = np.concatenate([self.board.flatten(), self.options.flatten(), shape.flatten()])
+        dit_state = np.concatenate([self.board.flatten(), shape.flatten()])
         return dit_state
 
     def render(self, mode='shit'):
