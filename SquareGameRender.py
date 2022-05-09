@@ -1,11 +1,13 @@
 import turtle
 import numpy as np
+from pretrain import pretrain_agent
 
 
 class SquareGameRenderer:
     def __init__(self, env, state_shape, figure_shape, num_episodes=1):
         self.env = env
         self.num_episodes = num_episodes
+        self.current_episode = 0
         self.window = turtle.Screen()
         self.window.title("SquareGame")
         self.board_width = state_shape[1]
@@ -26,6 +28,9 @@ class SquareGameRenderer:
         self.window.register_shape("cupcake.gif")
         self.window.delay(0)
 
+        self.expert_observations = []
+        self.expert_actions = []
+
     def step(self, x, y):
         print(x, y)
         x += (self.half_window_width - self.general_margin_x)
@@ -41,7 +46,14 @@ class SquareGameRenderer:
         total_reward = info['total_reward']
         if done:
             state = self.env.reset()
-
+            self.current_episode += 1
+            if self.current_episode == self.num_episodes:
+                np.savez_compressed(
+                    f"expert/expert_data_{np.random.randint(1, 100000)}",
+                    expert_actions=self.expert_actions,
+                    expert_observations=self.expert_observations,
+                )
+            total_reward = 0
         self.redraw(state, total_reward)
 
     def start(self):
