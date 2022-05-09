@@ -1,6 +1,7 @@
 import gym
 from gym import Env
 from gym.spaces import Discrete, Box
+import turtle
 import numpy as np
 import time
 
@@ -144,6 +145,10 @@ def closest_pair(input_list, pair):
 
 class SquaresEnv(Env):
     def __init__(self):
+        self.click_x = 0
+        self.click_y = 0
+        self.hwidth = 700
+        self.hheight = 550
         self.total_episodes = 0
         self.last_difficulty_increase_episode = 0
         self.total_reward = 0
@@ -161,6 +166,15 @@ class SquaresEnv(Env):
         self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         self.there_are_options()
+
+        self.wn = turtle.Screen()
+        self.wn.title("SquareGame")
+        self.wn.setup(self.hwidth * 2, self.hheight * 2, startx = None, starty = None)
+        self.wn.bgcolor("black")
+        self.wn.register_shape("cookie.gif")
+        self.wn.register_shape("cupcake.gif")
+        self.wn.delay(0)
+        self.empty_wn = self.wn
 
     def set_num_of_shapes(self, num):
         self.NUM_OF_SHAPES = num
@@ -251,9 +265,58 @@ class SquaresEnv(Env):
         dit_state = np.concatenate([self.board.flatten(), shape.flatten()])
         return dit_state
 
-    def render(self, mode='shit'):
-        print(self.board)
-        print(get_shape(self.current_shape))
-        print(self.total_reward)
-        print('')
-        pass
+    def render(self, mode='agent'):
+        self.click_x = 0
+        self.click_y = 0
+
+        def clicked(x, y):
+            print(y, x)
+            self.click_x = x
+            self.click_y = y
+
+        self.wn.turtles().clear()
+        self.wn.clear()
+        self.wn.clearscreen()
+        self.wn.bgcolor("black")
+        self.wn.delay(0)
+        self.wn.onscreenclick(clicked)
+        rew = turtle.Turtle()
+        rew.hideturtle()
+        rew.color("white")
+        rew.penup()
+        rew.setposition(-self.hwidth + 300, -self.hheight + 50)
+        rew.write(f"Reward: {round(self.total_reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+        for row in range(self.BOARD_HEIGHT):
+            for col in range(self.BOARD_WIDTH):
+                cookie = turtle.Turtle()
+                cookie.penup()
+                cookie.speed(0)
+                if self.board[row, col] == 0:
+                    cookie.shape("cupcake.gif")
+                else:
+                    cookie.shape("cookie.gif")
+                x_pos = 60 + col * 100 - self.hwidth
+                y_pos = self.wn.window_height() - (row * 100) - self.hheight - 100
+                cookie.setposition(x_pos, y_pos)
+        margin_x = 1000
+        shape = get_shape(self.current_shape)
+        for row in range(4):
+            for col in range(4):
+                cookie = turtle.Turtle()
+                cookie.penup()
+                cookie.speed(0)
+                if shape[row, col] == 1:
+                    cookie.shape("cookie.gif")
+                else:
+                    cookie.shape("cupcake.gif")
+                x_pos = margin_x + col * 100 - self.hwidth
+                y_pos = self.wn.window_height() - (row * 100) - self.hheight - 100
+                cookie.setposition(x_pos, y_pos)
+        self.wn.tracer(False)
+        if mode == 'agent':
+            time.sleep(2)
+        else:
+            while self.click_x == 0 and self.click_y == 0:
+                time.sleep(0.05)
+                #self.wn.mainloop()
+            return [self.click_y, self.click_x]
