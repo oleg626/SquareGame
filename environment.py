@@ -4,6 +4,7 @@ from gym.spaces import Discrete, Box
 import turtle
 import numpy as np
 import time
+from SquareGameRenderOpenCv import SquareGameRenderOpenCv
 
 
 def get_shape(shape_type):
@@ -162,6 +163,7 @@ class SquaresEnv(Env):
         self.options = np.zeros((self.BOARD_HEIGHT, self.BOARD_WIDTH), dtype=np.uint8)
         self.current_shape = np.random.randint(1, self.NUM_OF_SHAPES)
         self.there_are_options()
+        self.renderer = SquareGameRenderOpenCv([self.BOARD_HEIGHT, self.BOARD_WIDTH], [4, 4])
 
     def set_num_of_shapes(self, num):
         self.NUM_OF_SHAPES = num
@@ -204,7 +206,6 @@ class SquaresEnv(Env):
         return yes
 
     def step(self, action):
-
         self.steps_made += 1
         reward = 0
         y = action[0]
@@ -255,7 +256,7 @@ class SquaresEnv(Env):
         return dit_state
 
     def render(self, mode='agent'):
-        pass
+        self.renderer.render(self.board, get_shape(self.current_shape), self.total_reward)
 
     def get_obs(self):
         return self.board.shape

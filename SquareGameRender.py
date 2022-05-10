@@ -29,6 +29,8 @@ class SquareGameRenderer:
         self.free = "octopus.gif"
         self.window.register_shape(self.taken)
         self.window.register_shape(self.free)
+        self.reward_text = turtle.Turtle()
+        self.max_reward_text = turtle.Turtle()
 
         self.window.register_shape("save.gif")
         self.window.delay(0)
@@ -36,6 +38,20 @@ class SquareGameRenderer:
 
         self.expert_observations = []
         self.expert_actions = []
+
+        self.state_turtles = []
+        for i in range(self.board_height):
+            arr = []
+            for j in range(self.board_width):
+                arr.append(turtle.Turtle())
+            self.state_turtles.append(arr)
+
+        self.shape_turtles = []
+        for i in range(self.shape_height):
+            arr = []
+            for j in range(self.shape_width):
+                arr.append(turtle.Turtle())
+            self.shape_turtles.append(arr)
 
     def step(self, x, y):
         x += (self.half_window_width - self.general_margin_x)
@@ -68,7 +84,50 @@ class SquareGameRenderer:
         self.redraw(self.state, total_reward)
 
     def start(self):
+
         self.state = self.env.reset()
+        for row in range(self.board_height):
+            for col in range(self.board_width):
+                cookie = turtle.Turtle()
+                cookie.shape(self.free)
+                cookie.penup()
+                cookie.speed(0)
+                x_pos = self.general_margin_x + col * self.icon_width - self.half_window_width
+                y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - self.general_margin_y
+                cookie.setposition(x_pos, y_pos)
+                self.state_turtles[row][col] = cookie
+
+        shape_margin_x = (self.general_margin_x * 2) + self.board_width * self.icon_width
+        for row in range(self.shape_height):
+            for col in range(self.shape_width):
+                cookie = turtle.Turtle()
+                cookie.shape(self.free)
+                cookie.penup()
+                cookie.speed(0)
+                x_pos = shape_margin_x + col * self.icon_width - self.half_window_width
+                y_pos = self.window_height - ((row + 1) * self.icon_height) - self.half_window_height
+                cookie.setposition(x_pos, y_pos)
+                self.shape_turtles[row][col] = cookie
+
+        save_icon = turtle.Turtle()
+        save_icon.shape("save.gif")
+        save_icon.penup()
+        save_icon.speed(0)
+        save_icon.setposition(500, -300)
+        save_icon.onclick(self.save_data)
+
+        self.reward_text.hideturtle()
+        self.reward_text.color("white")
+        self.reward_text.penup()
+        self.reward_text.setposition(-self.half_window_width + 300, -self.half_window_height + 50)
+        self.reward_text.write(f"Reward: {round(0, 1)}", align="center", font=("Courier New", 32, "normal"))
+
+        self.max_reward_text.hideturtle()
+        self.max_reward_text.color("white")
+        self.max_reward_text.penup()
+        self.max_reward_text.setposition(-self.half_window_width + 900, -self.half_window_height + 50)
+        self.max_reward_text.write(f"Max reward: {round(self.max_reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+
         self.redraw(self.state, 0)
         self.window.onscreenclick(self.step)
         self.window.mainloop()
@@ -82,61 +141,27 @@ class SquareGameRenderer:
         print('data saved')
 
     def redraw(self, state, reward):
-        self.window.clearscreen()
-        self.window.bgpic("bg.gif")
-        self.window.delay(0)
-        self.window.onscreenclick(self.step)
-
-        save_icon = turtle.Turtle()
-        save_icon.shape("save.gif")
-        save_icon.penup()
-        save_icon.speed(0)
-        save_icon.setposition(500, -300)
-        save_icon.onclick(self.save_data)
-
         idx = self.board_height * self.board_width
         board = np.array(state[:idx])
         board = board.reshape((self.board_width, self.board_height))
         shape = np.array(state[idx:])
         shape = shape.reshape((self.shape_width, self.shape_height))
-        reward_text = turtle.Turtle()
-        reward_text.hideturtle()
-        reward_text.color("white")
-        reward_text.penup()
-        reward_text.setposition(-self.half_window_width + 300, -self.half_window_height + 50)
-        reward_text.write(f"Reward: {round(reward, 1)}", align="center", font=("Courier New", 32, "normal"))
 
-        max_reward_text = turtle.Turtle()
-        max_reward_text.hideturtle()
-        max_reward_text.color("white")
-        max_reward_text.penup()
-        max_reward_text.setposition(-self.half_window_width + 900, -self.half_window_height + 50)
-        max_reward_text.write(f"Max reward: {round(self.max_reward, 1)}", align="center", font=("Courier New", 32, "normal"))
-
+        self.reward_text.clear()
+        self.reward_text.write(f"Reward: {round(reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+        self.max_reward_text.clear()
+        self.max_reward_text.write(f"Max reward: {round(self.max_reward, 1)}", align="center",
+                                   font=("Courier New", 32, "normal"))
 
         for row in range(self.board_height):
             for col in range(self.board_width):
-                cookie = turtle.Turtle()
-                cookie.penup()
-                cookie.speed(0)
                 if board[row, col] == 0:
-                    cookie.shape(self.free)
+                    self.state_turtles[row][col].shape(self.free)
                 else:
-                    cookie.shape(self.taken)
-                x_pos = self.general_margin_x + col * self.icon_width - self.half_window_width
-                y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - self.general_margin_y
-                cookie.setposition(x_pos, y_pos)
-        shape_margin_x = (self.general_margin_x * 2) + board.shape[1] * self.icon_width
+                    self.state_turtles[row][col].shape(self.taken)
         for row in range(self.shape_height):
             for col in range(self.shape_width):
-                cookie = turtle.Turtle()
-                cookie.penup()
-                cookie.speed(0)
                 if shape[row, col] == 1:
-                    cookie.shape(self.taken)
+                    self.shape_turtles[row][col].shape(self.taken)
                 else:
-                    cookie.shape(self.free)
-                x_pos = shape_margin_x + col * self.icon_width - self.half_window_width
-                y_pos = self.window_height - ((row + 1) * self.icon_height) - self.half_window_height
-                cookie.setposition(x_pos, y_pos)
-
+                    self.shape_turtles[row][col].shape(self.free)

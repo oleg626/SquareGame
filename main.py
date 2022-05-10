@@ -63,9 +63,6 @@ def check_runtime(myEnv):
 
 
 myEnv = SquaresEnv()
-state = myEnv.reset()
-game = SquareGameRenderer(myEnv, myEnv.get_obs(), myEnv.get_shape(), num_episodes=20)
-game.start()
 check_env(myEnv)
 #check_runtime(myEnv)
 
@@ -78,10 +75,10 @@ for i in range(0, 3):
     temp = 0
     while not done:
         myEnv.render('human')
-        # y = int(input("Enter Y:"))
-        # x = int(input("Enter X:"))
-        # action = [y, x]
-        action = myEnv.action_space.sample()
+        y = int(input("Enter Y:"))
+        x = int(input("Enter X:"))
+        action = [y, x]
+        #action = myEnv.action_space.sample()
         expert_observations.append(state)
         expert_actions.append(action)
         state, reward, done, info = myEnv.step(action)
