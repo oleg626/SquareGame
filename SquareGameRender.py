@@ -1,6 +1,5 @@
 import turtle
 import numpy as np
-from pretrain import pretrain_agent
 
 
 class SquareGameRenderer:
@@ -8,14 +7,16 @@ class SquareGameRenderer:
         self.env = env
         self.num_episodes = num_episodes
         self.current_episode = 0
+        self.max_reward = 0
+
         self.window = turtle.Screen()
         self.window.title("SquareGame")
         self.board_width = state_shape[1]
         self.board_height = state_shape[0]
         self.shape_width = figure_shape[1]
         self.shape_height = figure_shape[0]
-        self.general_margin_x = 60
-        self.general_margin_y = 60
+        self.general_margin_x = 110
+        self.general_margin_y = 110
         self.icon_width = 100
         self.icon_height = 100
         self.window_width = (self.board_width + self.shape_width) * self.icon_width + 200
@@ -23,9 +24,12 @@ class SquareGameRenderer:
         self.window.setup(self.window_width, self.window_height, startx = None, starty = None)
         self.half_window_width = self.window_width / 2
         self.half_window_height = self.window_height / 2
-        self.window.bgcolor("black")
-        self.window.register_shape("cookie.gif")
-        self.window.register_shape("cupcake.gif")
+        self.window.bgpic("bg.gif")
+        self.taken = "poppy_bun.gif"
+        self.free = "octopus.gif"
+        self.window.register_shape(self.taken)
+        self.window.register_shape(self.free)
+
         self.window.register_shape("save.gif")
         self.window.delay(0)
         self.state = []
@@ -50,6 +54,7 @@ class SquareGameRenderer:
         self.state, reward, done, info = self.env.step(action)
         total_reward = info['total_reward']
         if done:
+            self.max_reward = max(self.max_reward, total_reward)
             self.state = self.env.reset()
             total_reward = 0
             self.current_episode += 1
@@ -78,7 +83,7 @@ class SquareGameRenderer:
 
     def redraw(self, state, reward):
         self.window.clearscreen()
-        self.window.bgcolor("black")
+        self.window.bgpic("bg.gif")
         self.window.delay(0)
         self.window.onscreenclick(self.step)
 
@@ -100,15 +105,24 @@ class SquareGameRenderer:
         reward_text.penup()
         reward_text.setposition(-self.half_window_width + 300, -self.half_window_height + 50)
         reward_text.write(f"Reward: {round(reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+
+        max_reward_text = turtle.Turtle()
+        max_reward_text.hideturtle()
+        max_reward_text.color("white")
+        max_reward_text.penup()
+        max_reward_text.setposition(-self.half_window_width + 900, -self.half_window_height + 50)
+        max_reward_text.write(f"Max reward: {round(self.max_reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+
+
         for row in range(self.board_height):
             for col in range(self.board_width):
                 cookie = turtle.Turtle()
                 cookie.penup()
                 cookie.speed(0)
                 if board[row, col] == 0:
-                    cookie.shape("cupcake.gif")
+                    cookie.shape(self.free)
                 else:
-                    cookie.shape("cookie.gif")
+                    cookie.shape(self.taken)
                 x_pos = self.general_margin_x + col * self.icon_width - self.half_window_width
                 y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - self.general_margin_y
                 cookie.setposition(x_pos, y_pos)
@@ -119,9 +133,9 @@ class SquareGameRenderer:
                 cookie.penup()
                 cookie.speed(0)
                 if shape[row, col] == 1:
-                    cookie.shape("cookie.gif")
+                    cookie.shape(self.taken)
                 else:
-                    cookie.shape("cupcake.gif")
+                    cookie.shape(self.free)
                 x_pos = shape_margin_x + col * self.icon_width - self.half_window_width
                 y_pos = self.window_height - ((row + 1) * self.icon_height) - self.half_window_height
                 cookie.setposition(x_pos, y_pos)

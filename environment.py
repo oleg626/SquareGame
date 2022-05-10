@@ -195,18 +195,12 @@ class SquaresEnv(Env):
         shape = get_shape(self.current_shape)
         p = np.where(shape != 0)
         shape = shape[min(p[0]): max(p[0]) + 1, min(p[1]): max(p[1]) + 1]
-        print('board')
-        print(self.board)
-        print('shape')
-        print(shape)
         yes = False
         for y in range(0, self.board.shape[0] - shape.shape[0] + 1):
             for x in range(0, self.board.shape[1] - shape.shape[1] + 1):
                 if self.insertion_possible(shape, y, x):
                     yes = True
                     self.options[y, x] = 1
-        print('options')
-        print(self.options)
         return yes
 
     def step(self, action):
