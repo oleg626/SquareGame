@@ -64,7 +64,7 @@ def check_runtime(myEnv):
 
 myEnv = SquaresEnv()
 state = myEnv.reset()
-game = SquareGameRenderer(myEnv, myEnv.get_obs(), myEnv.get_shape())
+game = SquareGameRenderer(myEnv, myEnv.get_obs(), myEnv.get_shape(), num_episodes=20)
 game.start()
 check_env(myEnv)
 #check_runtime(myEnv)

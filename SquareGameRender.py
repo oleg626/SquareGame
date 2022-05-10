@@ -26,26 +26,32 @@ class SquareGameRenderer:
         self.window.bgcolor("black")
         self.window.register_shape("cookie.gif")
         self.window.register_shape("cupcake.gif")
+        self.window.register_shape("save.gif")
         self.window.delay(0)
+        self.state = []
 
         self.expert_observations = []
         self.expert_actions = []
 
     def step(self, x, y):
-        print(x, y)
         x += (self.half_window_width - self.general_margin_x)
-        x = np.clip(x, 0, self.board_width * self.icon_width)
         x = round(x / self.icon_width)
         y += (self.half_window_height + self.general_margin_y)
         y = abs(self.window_height - y)
-        y = np.clip(y, 0, self.board_height * self.icon_height)
         y = round(y / self.icon_height)
-        print(y, x)
+        if x >= self.board_width or y >= self.board_height:
+            return
+
         action = [y, x]
-        state, reward, done, info = self.env.step(action)
+
+        self.expert_observations.append(self.state)
+        self.expert_actions.append(action)
+
+        self.state, reward, done, info = self.env.step(action)
         total_reward = info['total_reward']
         if done:
-            state = self.env.reset()
+            self.state = self.env.reset()
+            total_reward = 0
             self.current_episode += 1
             if self.current_episode == self.num_episodes:
                 np.savez_compressed(
@@ -53,20 +59,35 @@ class SquareGameRenderer:
                     expert_actions=self.expert_actions,
                     expert_observations=self.expert_observations,
                 )
-            total_reward = 0
-        self.redraw(state, total_reward)
+                print("Expert data saved")
+        self.redraw(self.state, total_reward)
 
     def start(self):
-        state = self.env.reset()
-        self.redraw(state, 0)
+        self.state = self.env.reset()
+        self.redraw(self.state, 0)
         self.window.onscreenclick(self.step)
         self.window.mainloop()
+
+    def save_data(self, x, y):
+        np.savez_compressed(
+            f"expert/expert_data_{np.random.randint(1, 100000)}",
+            expert_actions=self.expert_actions,
+            expert_observations=self.expert_observations,
+        )
+        print('data saved')
 
     def redraw(self, state, reward):
         self.window.clearscreen()
         self.window.bgcolor("black")
         self.window.delay(0)
         self.window.onscreenclick(self.step)
+
+        save_icon = turtle.Turtle()
+        save_icon.shape("save.gif")
+        save_icon.penup()
+        save_icon.speed(0)
+        save_icon.setposition(500, -300)
+        save_icon.onclick(self.save_data)
 
         idx = self.board_height * self.board_width
         board = np.array(state[:idx])
