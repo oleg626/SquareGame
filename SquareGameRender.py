@@ -15,12 +15,10 @@ class SquareGameRenderer:
         self.board_height = state_shape[0]
         self.shape_width = figure_shape[1]
         self.shape_height = figure_shape[0]
-        self.general_margin_x = 110
-        self.general_margin_y = 110
-        self.icon_width = 100
-        self.icon_height = 100
-        self.window_width = (self.board_width + self.shape_width) * self.icon_width + 200
-        self.window_height = self.board_height * self.icon_height + 200
+        self.icon_width = 70
+        self.icon_height = 70
+        self.window_width = (self.board_width + self.shape_width + 2) * self.icon_width
+        self.window_height = (self.board_height + 2) * self.icon_height
         self.window.setup(self.window_width, self.window_height, startx = None, starty = None)
         self.half_window_width = self.window_width / 2
         self.half_window_height = self.window_height / 2
@@ -54,9 +52,9 @@ class SquareGameRenderer:
             self.shape_turtles.append(arr)
 
     def step(self, x, y):
-        x += (self.half_window_width - self.general_margin_x)
+        x += (self.half_window_width - self.icon_width)
         x = round(x / self.icon_width)
-        y += (self.half_window_height + self.general_margin_y)
+        y += (self.half_window_height + self.icon_height)
         y = abs(self.window_height - y)
         y = round(y / self.icon_height)
         if x >= self.board_width or y >= self.board_height:
@@ -92,12 +90,12 @@ class SquareGameRenderer:
                 cookie.shape(self.free)
                 cookie.penup()
                 cookie.speed(0)
-                x_pos = self.general_margin_x + col * self.icon_width - self.half_window_width
-                y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - self.general_margin_y
+                x_pos = (col + 1) * self.icon_width - self.half_window_width
+                y_pos = self.window_height - (row * self.icon_height) - self.half_window_height - self.icon_height
                 cookie.setposition(x_pos, y_pos)
                 self.state_turtles[row][col] = cookie
 
-        shape_margin_x = (self.general_margin_x * 2) + self.board_width * self.icon_width
+        shape_margin_x = (2 + self.board_width) * self.icon_width
         for row in range(self.shape_height):
             for col in range(self.shape_width):
                 cookie = turtle.Turtle()
@@ -113,20 +111,20 @@ class SquareGameRenderer:
         save_icon.shape("save.gif")
         save_icon.penup()
         save_icon.speed(0)
-        save_icon.setposition(500, -300)
+        save_icon.setposition(self.half_window_width - 130, -100)
         save_icon.onclick(self.save_data)
 
         self.reward_text.hideturtle()
         self.reward_text.color("white")
         self.reward_text.penup()
-        self.reward_text.setposition(-self.half_window_width + 300, -self.half_window_height + 50)
-        self.reward_text.write(f"Reward: {round(0, 1)}", align="center", font=("Courier New", 32, "normal"))
+        self.reward_text.setposition(-self.half_window_width + 200, -self.half_window_height + 20)
+        self.reward_text.write(f"Score: {round(0, 1)}", align="center", font=("Courier New", 28, "normal"))
 
         self.max_reward_text.hideturtle()
         self.max_reward_text.color("white")
         self.max_reward_text.penup()
-        self.max_reward_text.setposition(-self.half_window_width + 900, -self.half_window_height + 50)
-        self.max_reward_text.write(f"Max reward: {round(self.max_reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+        self.max_reward_text.setposition(self.half_window_width - 300, -self.half_window_height + 20)
+        self.max_reward_text.write(f"Record: {round(self.max_reward, 1)}", align="center", font=("Courier New", 28, "normal"))
 
         self.redraw(self.state, 0)
         self.window.onscreenclick(self.step)
@@ -148,10 +146,10 @@ class SquareGameRenderer:
         shape = shape.reshape((self.shape_width, self.shape_height))
 
         self.reward_text.clear()
-        self.reward_text.write(f"Reward: {round(reward, 1)}", align="center", font=("Courier New", 32, "normal"))
+        self.reward_text.write(f"Score: {round(reward, 1)}", align="center", font=("Courier New", 28, "normal"))
         self.max_reward_text.clear()
-        self.max_reward_text.write(f"Max reward: {round(self.max_reward, 1)}", align="center",
-                                   font=("Courier New", 32, "normal"))
+        self.max_reward_text.write(f"Record: {round(self.max_reward, 1)}", align="center",
+                                   font=("Courier New", 28, "normal"))
 
         for row in range(self.board_height):
             for col in range(self.board_width):

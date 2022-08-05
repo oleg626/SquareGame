@@ -26,14 +26,14 @@ def pretrain_agent(
     env,
     train_expert_dataset,
     test_expert_dataset,
-    batch_size=64,
-    epochs=1000,
+    batch_size=128,
+    epochs=10,
     scheduler_gamma=0.7,
     learning_rate=1.0,
     log_interval=100,
     no_cuda=True,
     seed=1,
-    test_batch_size=64,
+    test_batch_size=128,
 ):
     use_cuda = not no_cuda and th.cuda.is_available()
     th.manual_seed(seed)
